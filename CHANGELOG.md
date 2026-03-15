@@ -2,6 +2,11 @@
 
 All notable updates and improvements to the Battleship Game are documented here.
 
+## [v1.6.0] - 2026-03-15
+
+### Improved
+- **Context-aware game button** — The "New Game" button is now hidden during ship placement to avoid confusion. During battle and game over, it shows as "Restart Game" instead.
+
 ## [v1.5.0] - 2026-03-15
 
 ### Improved

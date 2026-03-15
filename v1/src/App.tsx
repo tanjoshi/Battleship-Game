@@ -554,12 +554,14 @@ function App() {
             </button>
           </>
         )}
-        <button
-          className="bg-red-600 hover:bg-red-500 text-white font-semibold px-4 py-2 rounded-lg transition-colors shadow-md"
-          onClick={resetGame}
-        >
-          New Game
-        </button>
+        {gamePhase !== 'placement' && (
+          <button
+            className="bg-red-600 hover:bg-red-500 text-white font-semibold px-4 py-2 rounded-lg transition-colors shadow-md"
+            onClick={resetGame}
+          >
+            Restart Game
+          </button>
+        )}
       </div>
 
       <div className="flex justify-center gap-16 mb-6">
