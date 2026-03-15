@@ -2,6 +2,11 @@
 
 All notable updates and improvements to the Battleship Game are documented here.
 
+## [v1.2.0] - 2026-03-15
+
+### Fixed
+- **Rotate button label** — The rotate button now shows the orientation you will switch *to* (e.g. "Rotate to vertical" when currently horizontal) instead of displaying the current orientation.
+
 ## [v1.1.0] - 2026-03-15
 
 ### Fixed

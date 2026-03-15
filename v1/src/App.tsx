@@ -505,7 +505,7 @@ function App() {
                 setOrientation(orientation === 'horizontal' ? 'vertical' : 'horizontal')
               }
             >
-              Rotate ({orientation})
+              Rotate to {orientation === 'horizontal' ? 'vertical' : 'horizontal'}
             </button>
             <button
               className="bg-green-600 hover:bg-green-500 text-white font-semibold px-4 py-2 rounded-lg transition-colors shadow-md"
