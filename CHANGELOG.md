@@ -2,6 +2,11 @@
 
 All notable updates and improvements to the Battleship Game are documented here.
 
+## [v1.3.0] - 2026-03-15
+
+### Improved
+- **Smarter AI targeting** — The computer AI now detects the direction of consecutive hits (vertical or horizontal) and continues along that axis instead of randomly checking adjacent cells. Once two or more hits form a line, the AI extends in that direction until the ship is sunk or a wall/miss is reached, then reverses direction.
+
 ## [v1.2.0] - 2026-03-15
 
 ### Fixed

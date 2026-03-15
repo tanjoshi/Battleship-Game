@@ -116,29 +116,66 @@ function markSunk(board: Board, ship: Ship): Board {
   return newBoard
 }
 
+function isValidTarget(board: Board, r: number, c: number): boolean {
+  return (
+    r >= 0 && r < BOARD_SIZE && c >= 0 && c < BOARD_SIZE &&
+    board[r][c] !== 'hit' && board[r][c] !== 'miss' && board[r][c] !== 'sunk'
+  )
+}
+
 function getSmartComputerTarget(
   board: Board,
   _lastHit: [number, number] | null,
   hitStack: [number, number][]
 ): [number, number] {
+  if (hitStack.length >= 2) {
+    // Detect direction from the hit pattern
+    const sorted = [...hitStack].sort((a, b) => a[0] !== b[0] ? a[0] - b[0] : a[1] - b[1])
+    const isVertical = sorted[0][1] === sorted[1][1]
+    const isHorizontal = sorted[0][0] === sorted[1][0]
+
+    if (isVertical) {
+      // All hits share the same column — extend up or down
+      const col = sorted[0][1]
+      const rows = sorted.map(([r]) => r).sort((a, b) => a - b)
+      const minRow = rows[0]
+      const maxRow = rows[rows.length - 1]
+      // Try extending downward first
+      if (isValidTarget(board, maxRow + 1, col)) return [maxRow + 1, col]
+      // Try extending upward
+      if (isValidTarget(board, minRow - 1, col)) return [minRow - 1, col]
+    }
+
+    if (isHorizontal) {
+      // All hits share the same row — extend left or right
+      const row = sorted[0][0]
+      const cols = sorted.map(([, c]) => c).sort((a, b) => a - b)
+      const minCol = cols[0]
+      const maxCol = cols[cols.length - 1]
+      // Try extending rightward first
+      if (isValidTarget(board, row, maxCol + 1)) return [row, maxCol + 1]
+      // Try extending leftward
+      if (isValidTarget(board, row, minCol - 1)) return [row, minCol - 1]
+    }
+
+    // If direction-based targeting is blocked (e.g. hit a wall or miss), fall through to adjacent search
+  }
+
+  // Single hit or fallback: try all adjacent cells of each hit
   if (hitStack.length > 0) {
     for (const [hr, hc] of [...hitStack].reverse()) {
       const directions: [number, number][] = [
         [-1, 0], [1, 0], [0, -1], [0, 1],
       ]
       for (const [dr, dc] of directions) {
-        const nr = hr + dr
-        const nc = hc + dc
-        if (
-          nr >= 0 && nr < BOARD_SIZE && nc >= 0 && nc < BOARD_SIZE &&
-          board[nr][nc] !== 'hit' && board[nr][nc] !== 'miss' && board[nr][nc] !== 'sunk'
-        ) {
-          return [nr, nc]
+        if (isValidTarget(board, hr + dr, hc + dc)) {
+          return [hr + dr, hc + dc]
         }
       }
     }
   }
 
+  // Random targeting with checkerboard pattern
   const available: [number, number][] = []
   for (let r = 0; r < BOARD_SIZE; r++) {
     for (let c = 0; c < BOARD_SIZE; c++) {
