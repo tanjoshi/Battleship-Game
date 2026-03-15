@@ -304,6 +304,7 @@ function App() {
                 newLastHit = [row, col]
                 newHitStack.push([row, col])
 
+                let shipJustSunk = false
                 for (let i = 0; i < newShips.length; i++) {
                   if (!newShips[i].sunk && checkSunk(newBoard, newShips[i])) {
                     newShips[i].sunk = true
@@ -316,10 +317,11 @@ function App() {
                       ([r, c]) => !sunkCellSet.has(`${r},${c}`)
                     )
                     setMessage(`Computer sunk your ${newShips[i].name}!`)
+                    shipJustSunk = true
                   }
                 }
 
-                if (!newShips.some((s) => s.sunk && s.name === newShips.find((ns) => ns.sunk && checkSunk(newBoard, ns))?.name)) {
+                if (!shipJustSunk) {
                   setMessage('Computer hit your ship!')
                 }
               } else {

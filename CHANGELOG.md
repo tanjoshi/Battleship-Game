@@ -2,6 +2,11 @@
 
 All notable updates and improvements to the Battleship Game are documented here.
 
+## [v1.4.0] - 2026-03-15
+
+### Fixed
+- **Sunk message not displaying** — When the computer sunk a player's ship, the "Computer sunk your X!" message was immediately overwritten by "Computer hit your ship!" due to a broken condition. Fixed by tracking whether a ship was just sunk and only showing the hit message if no ship was sunk that turn.
+
 ## [v1.3.0] - 2026-03-15
 
 ### Improved
