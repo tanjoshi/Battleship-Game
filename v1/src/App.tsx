@@ -453,7 +453,7 @@ function App() {
               {ROWS[rowIndex]}
             </div>
             {row.map((cell, colIndex) => {
-              const hovering = isHoverCell(rowIndex, colIndex)
+              const hovering = isPlayerBoard && isHoverCell(rowIndex, colIndex)
               const cellColor = getCellColor(cell, isPlayerBoard, false)
               const symbol = getCellSymbol(cell, isPlayerBoard, false)
               const canClick =
