@@ -326,7 +326,7 @@ function App() {
                 }
               } else {
                 newBoard[row][col] = 'miss'
-                setMessage('Your turn - fire at the enemy!')
+                setMessage(`Computer fired at ${ROWS[row]}${col + 1} and missed! Your turn.`)
               }
 
               if (sunkCount >= SHIP_TEMPLATES.length) {

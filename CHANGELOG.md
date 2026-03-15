@@ -2,6 +2,11 @@
 
 All notable updates and improvements to the Battleship Game are documented here.
 
+## [v1.5.0] - 2026-03-15
+
+### Improved
+- **Computer miss feedback** — When the computer misses, the message now shows where it fired (e.g. "Computer fired at E7 and missed! Your turn.") instead of a generic "Your turn" message.
+
 ## [v1.4.0] - 2026-03-15
 
 ### Fixed
