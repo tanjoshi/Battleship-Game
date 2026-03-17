@@ -2,6 +2,12 @@
 
 All notable updates and improvements to the Battleship Game are documented here.
 
+## [v1.7.0] - 2026-03-17
+
+### Fixed
+- **Refactored computer turn logic** — Replaced the deeply nested `setState` pattern (5 levels deep) with a clean ref-based approach using `useRef`. The computer AI now reads state from refs directly, eliminating double state updates and potential race conditions.
+- **AI multi-ship hit confusion** — The AI now groups unsunk hits by alignment (same row or same column) and focuses on the largest aligned group when deciding which direction to extend. Previously, hits from two different ships could confuse the direction detection.
+
 ## [v1.6.0] - 2026-03-15
 
 ### Improved

@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import './App.css'
 
 const BOARD_SIZE = 10
@@ -123,42 +123,66 @@ function isValidTarget(board: Board, r: number, c: number): boolean {
   )
 }
 
+// Find the best aligned group of hits from the hitStack.
+// Returns the largest group of hits that share the same row or same column.
+function findAlignedGroup(hitStack: [number, number][]): [number, number][] | null {
+  if (hitStack.length < 2) return null
+
+  let bestGroup: [number, number][] | null = null
+
+  // Try to find groups sharing the same column (vertical)
+  const byCols = new Map<number, [number, number][]>()
+  for (const hit of hitStack) {
+    const col = hit[1]
+    if (!byCols.has(col)) byCols.set(col, [])
+    byCols.get(col)!.push(hit)
+  }
+  for (const group of byCols.values()) {
+    if (group.length >= 2 && (!bestGroup || group.length > bestGroup.length)) {
+      bestGroup = group
+    }
+  }
+
+  // Try to find groups sharing the same row (horizontal)
+  const byRows = new Map<number, [number, number][]>()
+  for (const hit of hitStack) {
+    const row = hit[0]
+    if (!byRows.has(row)) byRows.set(row, [])
+    byRows.get(row)!.push(hit)
+  }
+  for (const group of byRows.values()) {
+    if (group.length >= 2 && (!bestGroup || group.length > bestGroup.length)) {
+      bestGroup = group
+    }
+  }
+
+  return bestGroup
+}
+
 function getSmartComputerTarget(
   board: Board,
-  _lastHit: [number, number] | null,
   hitStack: [number, number][]
 ): [number, number] {
-  if (hitStack.length >= 2) {
-    // Detect direction from the hit pattern
-    const sorted = [...hitStack].sort((a, b) => a[0] !== b[0] ? a[0] - b[0] : a[1] - b[1])
-    const isVertical = sorted[0][1] === sorted[1][1]
-    const isHorizontal = sorted[0][0] === sorted[1][0]
+  // Try direction-based targeting using the best aligned group of hits
+  const alignedGroup = findAlignedGroup(hitStack)
+  if (alignedGroup) {
+    const isVertical = alignedGroup[0][1] === alignedGroup[1][1]
 
     if (isVertical) {
-      // All hits share the same column — extend up or down
-      const col = sorted[0][1]
-      const rows = sorted.map(([r]) => r).sort((a, b) => a - b)
+      const col = alignedGroup[0][1]
+      const rows = alignedGroup.map(([r]) => r).sort((a, b) => a - b)
       const minRow = rows[0]
       const maxRow = rows[rows.length - 1]
-      // Try extending downward first
       if (isValidTarget(board, maxRow + 1, col)) return [maxRow + 1, col]
-      // Try extending upward
       if (isValidTarget(board, minRow - 1, col)) return [minRow - 1, col]
-    }
-
-    if (isHorizontal) {
-      // All hits share the same row — extend left or right
-      const row = sorted[0][0]
-      const cols = sorted.map(([, c]) => c).sort((a, b) => a - b)
+    } else {
+      const row = alignedGroup[0][0]
+      const cols = alignedGroup.map(([, c]) => c).sort((a, b) => a - b)
       const minCol = cols[0]
       const maxCol = cols[cols.length - 1]
-      // Try extending rightward first
       if (isValidTarget(board, row, maxCol + 1)) return [row, maxCol + 1]
-      // Try extending leftward
       if (isValidTarget(board, row, minCol - 1)) return [row, minCol - 1]
     }
-
-    // If direction-based targeting is blocked (e.g. hit a wall or miss), fall through to adjacent search
   }
 
   // Single hit or fallback: try all adjacent cells of each hit
@@ -243,10 +267,16 @@ function App() {
   const [isPlayerTurn, setIsPlayerTurn] = useState(true)
   const [winner, setWinner] = useState<'player' | 'computer' | null>(null)
   const [hoverCells, setHoverCells] = useState<[number, number][]>([])
-  const [, setComputerLastHit] = useState<[number, number] | null>(null)
-  const [, setComputerHitStack] = useState<[number, number][]>([])
-  const [, setPlayerSunkCount] = useState(0)
   const [computerSunkCount, setComputerSunkCount] = useState(0)
+
+  // Refs for computer AI state — these don't need to trigger re-renders
+  const computerHitStackRef = useRef<[number, number][]>([])
+  const playerSunkCountRef = useRef(0)
+  // Refs that mirror state so doComputerTurn can read latest values without nesting setters
+  const playerBoardRef = useRef<Board>(playerBoard)
+  const playerShipsRef = useRef<Ship[]>(playerShips)
+  playerBoardRef.current = playerBoard
+  playerShipsRef.current = playerShips
 
   const handlePlacement = useCallback(
     (row: number, col: number) => {
@@ -283,76 +313,70 @@ function App() {
   )
 
   const doComputerTurn = useCallback(() => {
-    setPlayerBoard((prevPlayerBoard) => {
-      setPlayerShips((prevPlayerShips) => {
-        setComputerLastHit((prevLastHit) => {
-          setComputerHitStack((prevHitStack) => {
-            setPlayerSunkCount((prevSunkCount) => {
-              const [row, col] = getSmartComputerTarget(prevPlayerBoard, prevLastHit, prevHitStack)
+    // Read all current values from refs — no nested setState needed
+    const currentBoard = playerBoardRef.current
+    const currentShips = playerShipsRef.current
+    const hitStack = computerHitStackRef.current
+    let sunkCount = playerSunkCountRef.current
 
-              let newBoard = prevPlayerBoard.map((r) => [...r])
-              const newShips = prevPlayerShips.map((s) => ({
-                ...s,
-                cells: [...s.cells] as [number, number][],
-              }))
-              let sunkCount = prevSunkCount
-              let newHitStack = [...prevHitStack]
-              let newLastHit = prevLastHit
+    const [row, col] = getSmartComputerTarget(currentBoard, hitStack)
 
-              if (newBoard[row][col] === 'ship') {
-                newBoard[row][col] = 'hit'
-                newLastHit = [row, col]
-                newHitStack.push([row, col])
+    const newBoard = currentBoard.map((r) => [...r])
+    const newShips = currentShips.map((s) => ({
+      ...s,
+      cells: [...s.cells] as [number, number][],
+    }))
+    let newHitStack = [...hitStack]
 
-                let shipJustSunk = false
-                for (let i = 0; i < newShips.length; i++) {
-                  if (!newShips[i].sunk && checkSunk(newBoard, newShips[i])) {
-                    newShips[i].sunk = true
-                    newBoard = markSunk(newBoard, newShips[i])
-                    sunkCount++
-                    const sunkCellSet = new Set(
-                      newShips[i].cells.map(([r, c]) => `${r},${c}`)
-                    )
-                    newHitStack = newHitStack.filter(
-                      ([r, c]) => !sunkCellSet.has(`${r},${c}`)
-                    )
-                    setMessage(`Computer sunk your ${newShips[i].name}!`)
-                    shipJustSunk = true
-                  }
-                }
+    if (newBoard[row][col] === 'ship') {
+      newBoard[row][col] = 'hit'
+      newHitStack.push([row, col])
 
-                if (!shipJustSunk) {
-                  setMessage('Computer hit your ship!')
-                }
-              } else {
-                newBoard[row][col] = 'miss'
-                setMessage(`Computer fired at ${ROWS[row]}${col + 1} and missed! Your turn.`)
-              }
+      let shipJustSunk = false
+      for (let i = 0; i < newShips.length; i++) {
+        if (!newShips[i].sunk && checkSunk(newBoard, newShips[i])) {
+          newShips[i].sunk = true
+          const markedBoard = markSunk(newBoard, newShips[i])
+          for (let r = 0; r < BOARD_SIZE; r++) {
+            for (let c = 0; c < BOARD_SIZE; c++) {
+              newBoard[r][c] = markedBoard[r][c]
+            }
+          }
+          sunkCount++
+          const sunkCellSet = new Set(
+            newShips[i].cells.map(([r, c]) => `${r},${c}`)
+          )
+          newHitStack = newHitStack.filter(
+            ([r, c]) => !sunkCellSet.has(`${r},${c}`)
+          )
+          setMessage(`Computer sunk your ${newShips[i].name}!`)
+          shipJustSunk = true
+        }
+      }
 
-              if (sunkCount >= SHIP_TEMPLATES.length) {
-                setGamePhase('gameOver')
-                setWinner('computer')
-                setMessage('Game Over! The computer destroyed all your ships!')
-              } else {
-                setIsPlayerTurn(true)
-              }
+      if (!shipJustSunk) {
+        setMessage('Computer hit your ship!')
+      }
+    } else {
+      newBoard[row][col] = 'miss'
+      setMessage(`Computer fired at ${ROWS[row]}${col + 1} and missed! Your turn.`)
+    }
 
-              setComputerLastHit(newLastHit)
-              setComputerHitStack(newHitStack)
-              setPlayerSunkCount(sunkCount)
-              setPlayerShips(newShips)
-              setPlayerBoard(newBoard)
+    // Update refs
+    computerHitStackRef.current = newHitStack
+    playerSunkCountRef.current = sunkCount
 
-              return prevSunkCount
-            })
-            return prevHitStack
-          })
-          return prevLastHit
-        })
-        return prevPlayerShips
-      })
-      return prevPlayerBoard
-    })
+    // Update state — flat, no nesting
+    setPlayerBoard(newBoard)
+    setPlayerShips(newShips)
+
+    if (sunkCount >= SHIP_TEMPLATES.length) {
+      setGamePhase('gameOver')
+      setWinner('computer')
+      setMessage('Game Over! The computer destroyed all your ships!')
+    } else {
+      setIsPlayerTurn(true)
+    }
   }, [])
 
   const handlePlayerAttack = useCallback(
@@ -442,9 +466,8 @@ function App() {
     setIsPlayerTurn(true)
     setWinner(null)
     setHoverCells([])
-    setComputerLastHit(null)
-    setComputerHitStack([])
-    setPlayerSunkCount(0)
+    computerHitStackRef.current = []
+    playerSunkCountRef.current = 0
     setComputerSunkCount(0)
   }
 
