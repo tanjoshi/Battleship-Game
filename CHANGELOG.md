@@ -2,6 +2,37 @@
 
 All notable updates and improvements to the Battleship Game are documented here.
 
+## [v1.7.0] - 2026-03-17
+
+### Fixed
+- **Refactored computer turn logic** — Replaced the deeply nested `setState` pattern (5 levels deep) with a clean ref-based approach using `useRef`. The computer AI now reads state from refs directly, eliminating double state updates and potential race conditions.
+- **AI multi-ship hit confusion** — The AI now groups unsunk hits by alignment (same row or same column) and focuses on the largest aligned group when deciding which direction to extend. Previously, hits from two different ships could confuse the direction detection.
+
+## [v1.6.0] - 2026-03-15
+
+### Improved
+- **Context-aware game button** — The "New Game" button is now hidden during ship placement to avoid confusion. During battle and game over, it shows as "Restart Game" instead.
+
+## [v1.5.0] - 2026-03-15
+
+### Improved
+- **Computer miss feedback** — When the computer misses, the message now shows where it fired (e.g. "Computer fired at E7 and missed! Your turn.") instead of a generic "Your turn" message.
+
+## [v1.4.0] - 2026-03-15
+
+### Fixed
+- **Sunk message not displaying** — When the computer sunk a player's ship, the "Computer sunk your X!" message was immediately overwritten by "Computer hit your ship!" due to a broken condition. Fixed by tracking whether a ship was just sunk and only showing the hit message if no ship was sunk that turn.
+
+## [v1.3.0] - 2026-03-15
+
+### Improved
+- **Smarter AI targeting** — The computer AI now detects the direction of consecutive hits (vertical or horizontal) and continues along that axis instead of randomly checking adjacent cells. Once two or more hits form a line, the AI extends in that direction until the ship is sunk or a wall/miss is reached, then reverses direction.
+
+## [v1.2.0] - 2026-03-15
+
+### Fixed
+- **Rotate button label** — The rotate button now shows the orientation you will switch *to* (e.g. "Rotate to vertical" when currently horizontal) instead of displaying the current orientation.
+
 ## [v1.1.0] - 2026-03-15
 
 ### Fixed
